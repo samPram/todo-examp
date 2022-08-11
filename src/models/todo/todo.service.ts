@@ -129,6 +129,14 @@ export class TodoService {
     return { status: 'Success', message: 'Success', data: {} };
   }
 
+  /**
+   * Function for update todo
+   *
+   * @param {number} id
+   * @param {*} data
+   * @return {*}
+   * @memberof TodoService
+   */
   updateById(id: number, data: any) {
     const { activity_group_id = '', title = '' } = data;
     const data_all: Array<Todo> = TODO;

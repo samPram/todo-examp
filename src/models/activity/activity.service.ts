@@ -34,7 +34,16 @@ export class ActivityService {
    * @memberof ActivityService
    */
   getAll() {
-    const data = ACTIVITY;
+    const data = ACTIVITY.map((obj) => {
+      // hash email
+      const name = obj?.email.split('@');
+
+      const hash_email = bcrypt.hashSync(name[0], 10);
+      return {
+        ...obj,
+        email: hash_email + '@' + name[1],
+      };
+    });
 
     return {
       status: 'Success',

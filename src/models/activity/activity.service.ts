@@ -10,6 +10,13 @@ import { readFileSync, writeFileSync } from 'fs';
 
 @Injectable()
 export class ActivityService {
+  /**
+   * Private function for saving JSON file
+   *
+   * @private
+   * @param {*} data
+   * @memberof ActivityService
+   */
   private saveFile(data) {
     const list_json = JSON.stringify(data);
     // Write testlist back to the file
@@ -19,6 +26,7 @@ export class ActivityService {
       'utf8',
     );
   }
+
   /**
    * Function for get all activity from JSON data activity
    *
@@ -127,6 +135,14 @@ export class ActivityService {
     return { status: 'Success', message: 'Success', data: {} };
   }
 
+  /**
+   * function for update activity
+   *
+   * @param {number} id
+   * @param {*} data
+   * @return {*}
+   * @memberof ActivityService
+   */
   updateById(id: number, data: any) {
     const { email = '', title = '' } = data;
     const data_all: Array<Activity> = ACTIVITY;

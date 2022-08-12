@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -8,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import { TodoDto } from './dto/todo.dto';
 import { TodoService } from './todo.service';
@@ -16,11 +18,13 @@ import { TodoService } from './todo.service';
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   getAllTodo(@Query('activity_group_id') activity_id: string) {
     return this.todoService.getAll(activity_id);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
   getOneTodo(@Param('id', ParseIntPipe) id: number) {
     return this.todoService.getById(id);

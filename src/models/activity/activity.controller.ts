@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -7,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ActivityService } from './activity.service';
 import { ActivityDto } from './dto/activity.dto';
@@ -15,11 +17,13 @@ import { ActivityDto } from './dto/activity.dto';
 export class ActivityController {
   constructor(private readonly activityService: ActivityService) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   getActivity() {
     return this.activityService.getAll();
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
   getById(@Param('id', ParseIntPipe) id: number) {
     return this.activityService.getOne(id);

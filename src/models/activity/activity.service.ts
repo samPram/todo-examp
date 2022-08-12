@@ -1,31 +1,21 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import * as ACTIVITY from '../../common/constants/ACTIVITY.json';
-import * as bcrypt from 'bcrypt';
 import { ActivityDto } from './dto/activity.dto';
-import { readFileSync, writeFileSync } from 'fs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Activity } from './entity/activity.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ActivityService {
-  /**
-   * Private function for saving JSON file
-   *
-   * @private
-   * @param {*} data
-   * @memberof ActivityService
-   */
-  private saveFile(data) {
-    const list_json = JSON.stringify(data);
-    // Write testlist back to the file
-    writeFileSync(
-      `${process.cwd()}/src/common/constants/ACTIVITY.json`,
-      list_json,
-      'utf8',
-    );
-  }
+  constructor(
+    @InjectRepository(Activity)
+    private activityRepository: Repository<Activity>,
+  ) {}
 
   /**
    * Function for get all activity from JSON data activity
@@ -33,23 +23,18 @@ export class ActivityService {
    * @return {*}
    * @memberof ActivityService
    */
-  getAll() {
-    const data = ACTIVITY.map((obj) => {
-      // hash email
-      const name = obj?.email.split('@');
+  async getAll() {
+    try {
+      const data = await this.activityRepository.find();
 
-      const hash_email = bcrypt.hashSync(name[0], 10);
       return {
-        ...obj,
-        email: hash_email + '@' + name[1],
+        status: 'Success',
+        message: 'Success',
+        data: data,
       };
-    });
-
-    return {
-      status: 'Success',
-      message: 'Success',
-      data: data,
-    };
+    } catch (error) {
+      throw new InternalServerErrorException('server error');
+    }
   }
 
   /**
@@ -60,27 +45,25 @@ export class ActivityService {
    * @memberof ActivityService
    */
   async getOne(id: number) {
-    // DB replacement
-    const data: Array<Activity> = ACTIVITY;
+    try {
+      const data = await this.activityRepository.findOneBy({ id });
 
-    const result = data.find((item) => {
-      return item?.id === id;
-    });
+      if (!data) {
+        throw new NotFoundException(`Activity with ID ${id} Not Found`);
+      }
 
-    if (!result) {
-      throw new NotFoundException(`Activity with ID ${id} Not Found`);
+      return {
+        status: 'Success',
+        message: 'Success',
+        data: data,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw new NotFoundException(error.message);
+      }
+
+      throw new Error('server error');
     }
-
-    // encode email
-    const name = result?.email.split('@');
-
-    const hash_email = await bcrypt.hash(name[0], 10);
-
-    return {
-      status: 'Success',
-      message: 'Success',
-      data: { ...result, email: hash_email + '@' + name[1] },
-    };
   }
 
   /**
@@ -90,32 +73,36 @@ export class ActivityService {
    * @return {*}
    * @memberof ActivityService
    */
-  addActivity(data: ActivityDto) {
-    const { email, title } = data;
+  async addActivity(data: ActivityDto) {
+    try {
+      const { email, title } = data;
 
-    const data_all = ACTIVITY;
+      if (!title || !email) {
+        throw new BadRequestException(
+          `${!email ? 'email' : 'title'} cannot be null`,
+        );
+      }
 
-    if (!title || !email) {
-      throw new BadRequestException(
-        `${!email ? 'email' : 'title'} cannot be null`,
-      );
+      const result = await this.activityRepository.create({
+        email,
+        title,
+        updated_at: `${new Date().toISOString()}`,
+        created_at: `${new Date().toISOString()}`,
+      });
+
+      await this.activityRepository.save(result);
+
+      return {
+        status: 'Success',
+        message: 'Success',
+        data: result,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error.message);
+      }
+      throw new Error('server error');
     }
-
-    const payload = {
-      id: Math.max(...ACTIVITY.map((o) => o.id)) + 1,
-      email,
-      title,
-      created_at: `${new Date().toISOString()}`,
-      updated_at: `${new Date().toISOString()}`,
-      deleted_at: null,
-    };
-
-    // ADD data
-    data_all.push(payload);
-
-    // save file
-    this.saveFile(data_all);
-    return payload;
   }
 
   /**
@@ -125,23 +112,21 @@ export class ActivityService {
    * @return {*}
    * @memberof ActivityService
    */
-  deleteById(id: number) {
-    const data: Array<Activity> = ACTIVITY;
-    const find_one = data.find((item) => {
-      return item?.id === id;
-    });
+  async deleteById(id: number) {
+    try {
+      const data = await this.activityRepository.findOneBy({ id });
+      if (!data) {
+        throw new NotFoundException(`Activity with ID ${id} Not Found`);
+      }
 
-    if (!find_one) {
-      throw new NotFoundException(`Activity with ID ${id} Not Found`);
+      await this.activityRepository.delete(id);
+
+      return { status: 'Success', message: 'Success', data: {} };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw new BadRequestException(error.message);
+      }
     }
-
-    const result = data.filter((item) => {
-      return item?.id !== id;
-    });
-
-    this.saveFile(result);
-
-    return { status: 'Success', message: 'Success', data: {} };
   }
 
   /**
@@ -152,37 +137,41 @@ export class ActivityService {
    * @return {*}
    * @memberof ActivityService
    */
-  updateById(id: number, data: any) {
-    const { email = '', title = '' } = data;
-    const data_all: Array<Activity> = ACTIVITY;
+  async updateById(id: number, data: any) {
+    try {
+      const { email = '', title = '' } = data;
+      if (!data) {
+        throw new BadRequestException(`body cannot be null`);
+      }
 
-    const find_one = data_all.find((item) => {
-      return item?.id === id;
-    });
+      const item = await this.activityRepository.findOneBy({ id });
 
-    if (!data) {
-      throw new BadRequestException(`body cannot be null`);
+      if (!item) {
+        throw new NotFoundException(`Activity with ID ${id} Not Found`);
+      }
+
+      const result = await this.activityRepository
+        .createQueryBuilder()
+        .update({
+          email: email ? email : item?.email,
+          title: title ? title : item?.title,
+          updated_at: `${new Date().toISOString()}`,
+        })
+        .where({
+          id: id,
+        })
+        .returning('*')
+        .execute();
+
+      return {
+        status: 'Success',
+        message: 'Success',
+        data: result.raw[0],
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw new HttpException(error.message, error.getStatus());
+      }
     }
-
-    if (!find_one) {
-      throw new NotFoundException(`Activity with ID ${id} Not Found`);
-    }
-
-    const index = data_all.findIndex((obj) => obj.id === id);
-
-    data_all[index] = {
-      ...find_one,
-      email: email ? email : find_one?.email,
-      title: title ? title : find_one?.title,
-      updated_at: `${new Date().toISOString()}`,
-    };
-
-    this.saveFile(data_all);
-
-    return {
-      status: 'Success',
-      message: 'Success',
-      data: data_all[index],
-    };
   }
 }

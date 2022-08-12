@@ -45,7 +45,6 @@ export class Todo {
   deleted_at: Date;
 
   @Transform(({ value }) => {
-    // console.log(value);
     return value.id;
   })
   @ManyToOne(() => Activity, (todo) => todo.todos)

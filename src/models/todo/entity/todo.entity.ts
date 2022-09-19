@@ -21,7 +21,7 @@ export enum Priority {
   VERY_HIGH = 'very-high',
 }
 
-@Entity()
+@Entity('todo')
 export class Todo {
   @PrimaryGeneratedColumn()
   id: number;
@@ -32,16 +32,16 @@ export class Todo {
   @Column('varchar')
   title: string;
 
-  @Column('enum', { enum: Priority, default: Priority.MEDIUM })
+  @Column('enum', { enum: Priority, default: Priority.VERY_HIGH })
   priority: Priority;
 
-  @Column('timestamptz')
+  @Column('timestamp')
   created_at: Date;
 
-  @Column('timestamptz', { nullable: true })
+  @Column('timestamp', { nullable: true })
   updated_at: Date;
 
-  @Column('timestamptz', { nullable: true, default: null })
+  @Column('timestamp', { nullable: true, default: null })
   deleted_at: Date;
 
   @Transform(({ value }) => {

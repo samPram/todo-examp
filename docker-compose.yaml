@@ -1,50 +1,42 @@
 version: '3.9'
 services:
-  db:
-    image: postgres
-    restart: always
-    environment:
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    container_name: postgres-db
+  mysqldb:
+    build: ./database
+    image: mysql:5.7.26
+    container_name: mysqldb
     volumes:
-      - ./datadb:/var/lib/postgresql/data:rw
+      - ./database/data:/var/lib/mysql:rw
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_TCP_PORT: ${MYSQL_PORT}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DBNAME}
+    networks:
+      - nesjs-network
   nestjs:
     build:
       context: .
       dockerfile: ./Dockerfile
     image: sampram/todo-examp:latest
     environment:
-      - DB_TYPE=${DB_TYPE}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_SYNC=false
-      - POSTGRES_PORT=${POSTGRES_PORT}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DBNAME=${MYSQL_DBNAME}
     ports:
       - '3030:3030' # expose-to-the-world : only-in-the-docker
     container_name: todo-examp
     depends_on:
-      - db
+      - mysqldb
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   restart: always
-  #   container_name: todo-pgadmin4
-  #   environment:
-  #     - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
-  #     - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
-  #     - PGADMIN_LISTEN_PORT=${PGADMIN_LISTEN_PORT}
-  #   ports:
-  #     - '8080:80'
-  #   volumes:
-  #     - ./pgadmin-data:/var/lib/pgadmin:rw
-  #   depends_on:
-  #     - db
+    networks:
+      - nesjs-network
 volumes:
-  datadb:
-  # pgadmin-data:
+  database:
+networks:
+  nesjs-network:
+    driver: bridge

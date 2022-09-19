@@ -24,10 +24,26 @@ export class ExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const status_message =
-      exception instanceof HttpException
-        ? exception.getResponse()['error']
-        : 'Internal Server Error';
+    let status_message;
+
+    switch (httpStatus) {
+      case 404:
+        status_message = 'Not Found';
+        break;
+
+      case 403:
+        status_message = 'Forbidden';
+        break;
+
+      case 400:
+        status_message = 'Bad Request';
+        break;
+
+      default:
+        status_message = 'Internal Server Error';
+        break;
+    }
+
     const message =
       exception instanceof HttpException
         ? exception.message

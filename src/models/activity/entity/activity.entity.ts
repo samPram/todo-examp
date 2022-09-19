@@ -3,7 +3,7 @@ import stringToUuid from 'src/common/helper/convertUUID';
 import { Todo } from 'src/models/todo/entity/todo.entity';
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 
-@Entity()
+@Entity('activity')
 export class Activity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -19,13 +19,13 @@ export class Activity {
   @Column('varchar')
   title: string;
 
-  @Column('timestamptz')
+  @Column('timestamp')
   created_at: Date;
 
-  @Column('timestamptz', { nullable: true })
+  @Column('timestamp', { nullable: true })
   updated_at: Date;
 
-  @Column('timestamptz', { nullable: true, default: null })
+  @Column('timestamp', { nullable: true, default: null })
   deleted_at: Date;
 
   //   One to many

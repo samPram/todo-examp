@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as moment from 'moment';
 import { Repository } from 'typeorm';
 import { TodoDto } from './dto/todo.dto';
 import { Todo } from './entity/todo.entity';
@@ -35,7 +36,7 @@ export class TodoService {
       const result = await data.getMany();
       return { status: 'Success', message: 'Success', data: result };
     } catch (error) {
-      throw new Error('server error');
+      throw new HttpException(error.message, error.getStatus());
     }
   }
 
@@ -78,13 +79,13 @@ export class TodoService {
 
       if (!title || !activity_group_id) {
         throw new BadRequestException(
-          `${!title ? 'title' : 'activityID'} cannot be null`,
+          `${!title ? 'title' : 'activity_group_id'} cannot be null`,
         );
       }
 
       const result = await this.todoRepository.create({
-        created_at: `${new Date().toISOString()}`,
-        updated_at: `${new Date().toISOString()}`,
+        created_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss'),
         title: title,
         activity: {
           id: activity_group_id,
@@ -96,7 +97,7 @@ export class TodoService {
       return {
         status: 'Success',
         message: 'Success',
-        data: result,
+        data: { activity_group_id, ...result },
       };
     } catch (error) {
       if (error instanceof HttpException) {
@@ -152,26 +153,21 @@ export class TodoService {
         throw new NotFoundException(`Todo with ID ${id} Not Found`);
       }
 
-      const result = await this.todoRepository
-        .createQueryBuilder()
-        .update({
-          title: title ? title : item.title,
-          priority: priority ? priority : item.priority,
-          is_active: is_active ? is_active : item.is_active,
-          updated_at: `${new Date().toISOString()}`,
-        })
-        .where({
-          id: id,
-        })
-        .returning('*')
-        .execute();
+      const result = await this.todoRepository.save({
+        id: id,
+        title: title ? title : item.title,
+        priority: priority ? priority : item.priority,
+        is_active: is_active ? is_active : item.is_active,
+        updated_at: moment().format('YYYY-MM-DD HH:mm:ss'),
+      });
 
       return {
         status: 'Success',
         message: 'Success',
-        data: result.raw[0],
+        data: result,
       };
     } catch (error) {
+      console.log(error);
       if (error instanceof HttpException) {
         throw new HttpException(error.message, error.getStatus());
       }

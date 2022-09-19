@@ -18,5 +18,11 @@ RUN npm run build
 
 EXPOSE 3030
 
+ENV MYSQL_HOST=172.17.0.1
+ENV MYSQL_PORT=3306
+ENV MYSQL_USER=root
+ENV MYSQL_PASSWORD=pakpram1141
+ENV MYSQL_DBNAM=challenge_2_be
+
 # Start the server using the production build
 CMD [ "node", "dist/main.js" ]
